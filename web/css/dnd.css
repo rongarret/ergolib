@@ -1,0 +1,77 @@
+
+body,html {
+  height: 100%;
+}
+
+body.dnd-hovering {
+  background-color:rgba(0,0,0,0.25);
+}
+
+.dnd-hovering {
+  -webkit-box-shadow: inset 0px 0px 95px 15px rgba(0,0,0,0.59);
+  -moz-box-shadow: inset 0px 0px 95px 15px rgba(0,0,0,0.59);
+  box-shadow: inset 0px 0px 95px 15px rgba(0,0,0,0.59);
+}
+.dnd-dropped {
+  -webkit-box-shadow: inset 0px 0px 95px 15px rgba(20,156,130,1);
+  -moz-box-shadow: inset 0px 0px 95px 15px rgba(20,156,130,1);
+  box-shadow: inset 0px 0px 95px 15px rgba(20,156,130,1);
+}
+div#uploadContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  display: none;
+}
+
+div#uploadOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 99;
+}
+
+div#uploadStatus {
+  
+  background-color: rgba(0,0,0,0.75);
+  color: #fff;
+  font-weight: bold;
+  position: fixed;
+  top: 25%;
+  left: 25%;
+  height: 50%;
+  width: 50%;
+  
+  -moz-box-shadow: 1px 0px 32px    rgba(0,0,0,0.75);
+  -webkit-box-shadow: 1px 0px 32px rgba(0,0,0,0.75);
+  box-shadow: 1px 0px 32px         rgba(0,0,0,0.75);
+  text-shadow:1px 1px 3px #000000;
+  
+  padding: 20px;
+  border-radius:10px;
+  text-align:center;
+}
+
+div#uploadProgress {
+  display: none;
+}
+
+div#uploadProgress > div {
+  display: inline-block;
+  width: 393px;
+  height: 16px;
+  border: 1px solid rgb(128, 128, 128);
+  position: relative;
+  top: 5px;
+  left: 5px;
+}
+
+div#uploadProgress > div > div {
+  background: rgb(130, 171, 196);
+  height: 16px;
+  width: 0;
+}
