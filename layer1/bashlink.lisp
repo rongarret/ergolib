@@ -1,5 +1,5 @@
 
-(require :clos-utils)
+(require :ergoclos)
 
 (defun random-prompt (&optional (n 100))
   (strcat "--" (b32 (random (ash 1 n))) "--"))

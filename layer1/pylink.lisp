@@ -1,5 +1,5 @@
 
-(require :clos-utils)
+(require :ergoclos)
 
 (define-class python-server process instream outstream prompt)
 
