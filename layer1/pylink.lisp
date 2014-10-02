@@ -1,5 +1,5 @@
 
-(require :ergoclos)
+(require :ergolib)
 
 (define-class python-server process instream outstream prompt)
 
@@ -22,11 +22,15 @@
 (define-method (pycmd (p python-server instream outstream prompt) s &rest args)
   (apply 'format instream s args)
   (terpri instream)
+  (terpri instream)
   (force-output instream)
   (with-collector collect
     (do ((line (read-line outstream) (read-line outstream)))
-        ((string= line prompt))
-      (collect line))))
+        ((and (>= (length line) (length prompt))
+              (string= prompt (slice line (- (length prompt))))))
+      (collect line))
+    (sleep 0.01)
+    (while (listen outstream) (read-char outstream))))
 
 (define-method (kill (p python-server instream))
   (close instream))
