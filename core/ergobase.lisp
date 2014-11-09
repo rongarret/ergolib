@@ -39,11 +39,8 @@
 (defun ->string (thing)
   (if (stringp thing) thing (printl thing nil)))
 
-(defun 2string (thing) ; Needs a better name
-  (if (stringp thing) thing (princl thing nil)))
-
 (defun strcat (&rest things)
-  (apply 'concatenate 'string (mapcar '2string things)))
+  (apply 'concatenate 'string (mapcar '->string things)))
 
 (defun symcat (&rest strings)
   (intern (apply 'strcat strings)))
@@ -76,12 +73,12 @@
                     arg)
                    (t arg))))
       (values
-       (iterate loop ((args args))
+       (iterate loop1 ((args args))
          (cond ((null args) nil)
                ((atom args) (list '&rest (convert-arg args)))
                ((and destructure (consp (car args)))
-                (cons (loop (car args)) (loop (cdr args))))
-               (t (cons (convert-arg (car args)) (loop (cdr args))))))
+                (cons (loop (car args)) (loop1 (cdr args))))
+               (t (cons (convert-arg (car args)) (loop1 (cdr args))))))
        `(declare (ignore ,@ignore) (special ,@specials))))))
 
 (defmacro fn (args &body body)

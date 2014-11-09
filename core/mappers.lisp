@@ -45,10 +45,10 @@
   `(walkleaves (fn (,var) ,@body) ,tree))
 
 (defun mapleaves (fn tree)
-  (iterate loop ( (tree tree) )
+  (iterate loop1 ( (tree tree) )
     (if (atom tree)
       (funcall fn tree)
-      (cons (loop (car tree)) (and (cdr tree) (loop (cdr tree)))))))
+      (cons (loop1 (car tree)) (and (cdr tree) (loop1 (cdr tree)))))))
 
 (defun mapleaves! (fn tree)
   (iterate loop1 ( (tree tree) )

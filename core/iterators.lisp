@@ -210,10 +210,10 @@
     (fn ()
       (if (null iterators)
         (funcall current-iterator)
-        (iterate loop ()
+        (iterate loop1 ()
           (bb _ (funcall current-iterator)
               (if (eq _ (iterend))
-                (progn (setf current-iterator (iterator (pop iterators))) (loop))
+                (progn (setf current-iterator (iterator (pop iterators))) (loop1))
                 _)))))))
 
 (defun iterslice (iterator start &optional end step)
@@ -255,14 +255,14 @@
 
 (defun leaves (tree)
   (fn ()
-    (iterate loop ()
+    (iterate loop1 ()
       (mcond (null tree) (iterend)
              (atom tree) (prog1 tree (setf tree nil))
              (atom (car tree)) (pop tree)
              t (bb tr (pop tree)
                    (aif (cdr tr) (push it tree))
                    (push (car tr) tree)
-                   (loop))))))
+                   (loop1))))))
 
 #|
 Examples:

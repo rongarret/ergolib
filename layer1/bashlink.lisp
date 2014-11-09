@@ -1,5 +1,5 @@
 
-(require :ergoclos)
+(require :ergolib)
 
 (defun random-prompt (&optional (n 100))
   (strcat "--" (b32 (random (ash 1 n))) "--"))
@@ -57,9 +57,6 @@
 (define-method (status (p bash-server process))
   (external-process-status process))
 
-#+nil(progn
+(defv $bash-server (make-bash-server))
+(defun bash (s &rest args) (cmd $bash-server (apply 'fmt s args)))
 
-(setf b (make-bash-server))
-(cmd b "ps -o %mem ~A" (ccl::getpid))
-
-)
