@@ -54,6 +54,10 @@
   `(labels ((,name ,(mapcar 'first args) ,@body))
      (,name ,@(mapcar 'second args))))
 
+; Suppress warnings for shadowing LOOP
+(shadow 'loop)
+(defmacro loop (&body body) `(cl:loop ,@body))
+
 (defun dynamic-variable? (v)
   (and (symbolp v)
        (let ( (c (elt (symbol-name v) 0)) )
@@ -73,12 +77,12 @@
                     arg)
                    (t arg))))
       (values
-       (iterate loop1 ((args args))
+       (iterate loop ((args args))
          (cond ((null args) nil)
                ((atom args) (list '&rest (convert-arg args)))
                ((and destructure (consp (car args)))
-                (cons (loop (car args)) (loop1 (cdr args))))
-               (t (cons (convert-arg (car args)) (loop1 (cdr args))))))
+                (cons (loop (car args)) (loop (cdr args))))
+               (t (cons (convert-arg (car args)) (loop (cdr args))))))
        `(declare (ignore ,@ignore) (special ,@specials))))))
 
 (defmacro fn (args &body body)
