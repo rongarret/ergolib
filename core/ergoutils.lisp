@@ -3,9 +3,15 @@
 (require :iterators)
 
 (defun read-all (stream)
-  (with-char-collector collect (for c in stream do (collect c))))
+  (if (eq (stream-element-type stream) 'character)
+    (with-char-collector collect (for c in stream do (collect c)))
+    (with-vcollector collect (for b in stream do (collect b)))))
 
 (deftype u8 () '(unsigned-byte 8))
+(deftype octet () 'u8)
+(deftype octets () '(vector u8))
+
+(defun octets (&rest octets) (coerce octets 'octets))
 
 (defun file-contents (path &optional (encoding :default))
   (if (eq encoding :binary)
