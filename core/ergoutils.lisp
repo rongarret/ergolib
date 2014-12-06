@@ -52,13 +52,15 @@
 ;;; Slice
 ;;;
 (define-method (slice (s sequence) start &optional end step)
-  (bb n (length s)
-      start (if (< start 0) (+ n start) start)
-      (if (null end) (return (subseq s start)))
-      end (if (< end 0) (+ n end) end)
-      (if (null step) (return (subseq s start end)))
-      (error "Step argument to slice is not yet implemented")))
-
+  (bb len (length s)
+      start (if (< start 0) (max (+ len start) 0) (min start len))
+      end (if (null end) len (min len (if (< end 0) (max (+ len end) start) end)))
+      s (subseq s start end)
+      (if (null step) (return s))
+      cnt (/ len step)
+      s1 (subseq s 0 cnt)
+      (for i in (counter 0 cnt) do (setf (ref s1 i) (ref s (* i step))))
+      s1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
