@@ -22,6 +22,15 @@
     (with-open-file (f (pathname path) :external-format encoding)
       (read-all f))))
 
+(defun set-file-contents (path thing)
+  (with-open-file (f path :direction :output :if-exists :supersede :if-does-not-exist :create
+                     :element-type (if (typep thing 'bytes) 'u8 'character))
+    (if (or (stringp thing) (typep thing 'bytes))
+      (write-sequence thing f)
+      (progn (princ ";;; SFC-data" f) (printl thing f)))))
+
+(defsetf file-contents set-file-contents)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Unix utils
