@@ -184,11 +184,11 @@ Miscellaneous
 ---
 There are a bunch of miscellaneous things in ergolib which I will only bother documenting if someone asks me to.  But here's a list of what's there along with a brief descritpion:
 
-RFFI is a foreign function interface that I wrote before I knew about CFFI
-HASHLIB is a library of cryptographic hash functions
-CAS is a content-addressable persistent store
-TSFIFO is a thread-safe FIFO (first-in-first-out queue)
-PATTERN-MATCH is a powerful but light-weight pattern matching library
-HTML-UTILS is exactly what you would expect
+* RFFI is a foreign function interface that I wrote before I knew about CFFI
+* HASHLIB is a library of cryptographic hash functions
+* CAS is a content-addressable persistent store
+* TSFIFO is a thread-safe FIFO (first-in-first-out queue)
+* PATTERN-MATCH is a powerful but light-weight pattern matching library
+* HTML-UTILS is exactly what you would expect
 
 If you want more info about any of these, or anything else in ergolib please do not hesitate to contact me.
