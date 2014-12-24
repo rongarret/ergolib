@@ -10,7 +10,7 @@ Summary
 -------
 Ergolib is a disparate collection of utilities designed to make programming in Common Lisp easier.  The design of ergolib is based on a desire to reduce cognitive load on the programmer.  It deliberately sacrifices run-time efficiency and adherence to certain Common Lisp coding conventions in service of this goal.  In particular, ergolib does not use a build system and does not use packages (though it could be easily modified to do both if anyone wants it to).
 
-Ergolib has only been tested on Clozure Common Lisp (CCL).  Most of it should be portable to any ANSI-standard CL, but I haven't actually tried it.
+Ergolib currently works only in Clozure Common Lisp.  I'm working on a port to SBCL.  If anyone proficient in SBCL wants to volunteer some help that would be much appreciated.
 
 This code has been used in a lot of projects and is fairly mature, but it has never been released before so it probably has some rough edges.  If you encounter any problems please do not hesitate to contact me.
 
@@ -29,7 +29,7 @@ DEFINE-CLASS and DEFINE-METHOD are thin wrappers over DEFCLASS and DEFMETHOD wit
 
 where each ARG in *args* is either a symbol or a list of the form:
 
-	(argname classname &rest slot-name)
+	(argname classname &rest slot-names)
 
 Each *SLOT-NAME* is bound in the body of the method using WITH-SLOTS.
 
