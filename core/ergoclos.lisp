@@ -71,6 +71,7 @@
                       (error "Value ~S must be of type ~S" new-value ',type))))))))
    `(eval-always
       (defclass ,id ,superclasses ,slotspecs ,@(if metaclass `((:metaclass ,metaclass))))
+      (finalize-inheritance (find-class ',id)) ; Required for SBCL
       (defc ,(symcat "<" id ">") (find-class ',id) t)
       ,@methods
       (defun ,(concatenate-symbol 'make- id) (&rest args)

@@ -129,6 +129,7 @@
          iter))
      (define-method (slice (x ,name) start &optional end step)
        (slice (for item in x yield item) start end step))
+#+CCL ; Need to replace this with trivial-garbage
      (define-method (ccl:terminate (iter ,name stream)) (close stream))))
 
 (define-stream-iterator lines read-line)

@@ -3,16 +3,6 @@
   (defmacro eval-always (&body body)
     `(eval-when (:compile-toplevel :load-toplevel :execute) ,@body)))
 
-#+hemlock
-(import 'hi::defindent)
-
-#-hemlock
-(defmacro defindent (name indent) nil)
-
-#+CLISP (use-package :clos)
-#+SBCL (use-package :sb-mop)
-#+CCL (shadowing-import '(ccl::while ccl::until))
-
 (defmacro without-length-restrictions (&body body)
   `(let ((*print-length* nil) (*print-string-length* nil))
      ,@body))

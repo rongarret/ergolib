@@ -24,8 +24,8 @@
 
 (defun set-file-contents (path thing)
   (with-open-file (f path :direction :output :if-exists :supersede :if-does-not-exist :create
-                     :element-type (if (typep thing 'bytes) 'u8 'character))
-    (if (or (stringp thing) (typep thing 'bytes))
+                     :element-type (if (typep thing 'octets) 'u8 'character))
+    (if (or (stringp thing) (typep thing 'octets))
       (write-sequence thing f)
       (progn (princ ";;; SFC-data" f) (printl thing f)))))
 
@@ -35,7 +35,7 @@
 ;;;
 ;;;  Unix utils
 ;;;
-
+#+CCL ; Need to replace with something more portable
 (defun system (cmd &optional stdin (external-format :utf-8))
   (if (typep stdin 'string) (setf stdin (make-string-input-stream stdin)))
   (if (typep cmd 'string) (setf cmd (split cmd #\Space)))
@@ -257,6 +257,7 @@
     (force-output logstream))
   (values))
 
+#+CCL ; Need to replace with trivial-backtrace
 (defun get-backtrace ()
   (with-output-to-string (s)
     (ccl:print-call-history :detailed-p nil :stream s)))

@@ -10,9 +10,7 @@ Summary
 -------
 Ergolib is a disparate collection of utilities designed to make programming in Common Lisp easier.  The design of ergolib is based on a desire to reduce cognitive load on the programmer.  It deliberately sacrifices run-time efficiency and adherence to certain Common Lisp coding conventions in service of this goal.  In particular, ergolib does not use a build system and does not use packages (though it could be easily modified to do both if anyone wants it to).
 
-Ergolib currently works only in Clozure Common Lisp.  I'm working on a port to SBCL.  If anyone proficient in SBCL wants to volunteer some help that would be much appreciated.
-
-This code has been used in a lot of projects and is fairly mature, but it has never been released before so it probably has some rough edges.  If you encounter any problems please do not hesitate to contact me.
+Ergolib was originally written for Clozure Common Lisp (CCL).  The current version has preliminary support for SBCL, ABCL and CLisp, but this has only been lightly tested.  If you encounter any difficulties with these systems please let me know.
 
 Quickstart: load init.lisp and then do (require :ergolib)
 
