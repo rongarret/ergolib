@@ -57,8 +57,9 @@
 
 (defvar *MODULE-SEARCH-PATH* nil)
 
-; NOTE: There is a bug in SBCLs pathname parser.  ".lisp" parses as
-; a path whose name is ".lisp" rather than one whose type is "lisp".
+; NOTE: SBCL parses ".foo" as a pathname whose name is ".foo" and whose
+; type is empty rather than one whose type is "foo" and whose name is
+; empty, so we have to use _.foo to force it to parse the way we want here.
 
 (defvar *.lisp-pathname* "_.lisp")
 (defvar *.fasl-pathname* "_.fasl")
