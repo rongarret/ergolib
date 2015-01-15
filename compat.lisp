@@ -3,7 +3,7 @@
 (import 'hi::defindent)
 
 #-hemlock
-(defmacro defindent (name indent) nil)
+(defmacro defindent (name indent) (declare (ignore name indent)) nil)
 
 #+CCL (shadowing-import '(ccl::while ccl::until))
 
@@ -31,6 +31,7 @@
 #+SBCL
 (progn
   (use-package :sb-mop)
+  ; Not actually neededa any more, but might be useful some day
   (defun arglist (thing)
     (if (symbolp thing) (setf thing (symbol-function thing)))
     (if (typep thing 'standard-generic-function)
