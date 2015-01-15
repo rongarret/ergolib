@@ -1,9 +1,8 @@
 
-#-CCL(load "compat")
-
 (defun this-directory (&optional (path-extension ""))
-  ; *loading-file-source-file* ?
   (merge-pathnames path-extension (directory-namestring *load-pathname*)))
+
+(load (merge-pathnames "compat" (this-directory)))
 
 (defun addpath (path)
   (setf path (probe-file (this-directory path)))
