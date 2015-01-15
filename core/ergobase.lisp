@@ -87,14 +87,9 @@
 
 (defmacro define-synonym (s1 s2)
   `(progn
-     (defun ,s1 ,(arglist s2)
-       (declare (ignorable ,@(remove-if (fn (s) (eql (elt (symbol-name s) 0) #\&))
-                                        (arglist s2))))
-       t)
      (setf (symbol-function ',s1) (symbol-function ',s2))
      (defsetf ,s1 (&rest args) (new-value)
-       `(setf (apply (function ,',s2) ,args) ,new-value))
-     ))
+       `(setf (apply (function ,',s2) ,args) ,new-value))))
 
 (define-synonym fst car)
 (define-synonym ffst caar)
