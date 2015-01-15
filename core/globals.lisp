@@ -15,8 +15,6 @@ LOAD-TIME-VALUE or with interned symbols.  I've chosen the latter approach here
 because it allows the code to be more highly optimized.
 |#
 
-(in-package :cl-user)
-
 (defun make-cell-for-symbol (sym type)
   (make-symbol (format nil "~A (~A)" sym type)))
 ;  (intern (format nil "~A (~A)" sym type) (symbol-package sym)))
