@@ -22,12 +22,24 @@
 (setf CHUNGA:*ACCEPT-BOGUS-EOLS* t)
 
 (require :cl-who)
-; Interesting name conflict here
+
+; Interesting name conflict here.  Erglib wants to define a function called FMT
+; but CL-WHO wants to use that symbol as a local macro name.  This isn't actually
+; a conflict, but since name resolution is done at read-time, CL makes it one.
+; Yet another reason why packages suck.
 (unintern 'fmt)
+
+; Work around a CCL bug that plays badly with swank, see http://trac.clozure.com/ccl/ticket/1260
+(unintern 'str)
+
+; Now we can safely use cl-who
 (use-package :cl-who)
+
+; And redefine FMT
 (defun fmt (s &rest args)
   (without-length-restrictions
    (apply 'format nil s args)))
+
 (require :cl-who-patches)
 
 (defmethod who:convert-tag-to-string-list ((tag (eql :comment)) attr-list body body-fn)
