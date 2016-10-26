@@ -26,8 +26,9 @@
        (values))
      (princ-to-string thing))))
 
-(defun ->string (thing)
-  (if (stringp thing) thing (printl thing nil)))
+(defmethod ->string (thing) (printl thing nil))
+(defmethod ->string ((s string)) s)
+(defmethod ->string ((c character)) (princ-to-string c))
 
 (defun strcat (&rest things)
   (apply 'concatenate 'string (mapcar '->string things)))
