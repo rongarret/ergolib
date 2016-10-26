@@ -74,11 +74,13 @@
         (ecase if-directories-do-not-exist
           (:create (create-directory dir-ns))
           (:error (error "Directory ~A does not exist" dir-ns))
-          (nil)))
+          ((nil))))
       (values ns (ccl::%unix-file-kind ns))))
 
-(defv $static-file-path (list (strcat (this-directory) "css/")
-                              (strcat (this-directory) "js/")))
+(defun dircat (dir1 dir2) (pathname (strcat (namestring dir1) dir2)))
+
+(defv $static-file-path (list (dircat (this-directory) "css/")
+                              (dircat (this-directory) "js/")))
 
 (defun static-file-dispatcher (request)
   (for dir in $static-file-path do
@@ -205,6 +207,7 @@
 
 (defindent "defpage" 1)
 (defindent "defpanel" 1)
+(defindent "defurl" 1)
 (defindent "throw" 1)
 
 (defpage "/test-error" (error "Test error"))
