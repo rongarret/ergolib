@@ -1,4 +1,5 @@
 
+(require :ql)
 (require :ergobase)
 (require :globals)
 (require :mappers)
