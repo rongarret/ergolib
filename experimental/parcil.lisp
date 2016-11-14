@@ -43,19 +43,7 @@
 ;;;  using single quotes as well as double quotes (but you must use the same type
 ;;;  to close the string as you did to open it).
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-
-(require :globals)
-
-(defmacro iterate (name args &rest body)
-  `(labels ((,name ,(mapcar #'car args) ,@body))
-     (,name ,@(mapcar #'cadr args))))
-
-(defmacro aif (condition &optional (then nil then-p) &rest more)
-  (if then-p
-    `(let ((it ,condition)) (if it ,then ,(if more `(aif ,@more))))
-    condition))
-)
+(require :ergolib)
 
 (defv $parcil-stream t)
 
@@ -112,14 +100,16 @@
 (defv $unary-op-translations
   '((* . deref) (& . address-of) (- . -) (! . not) (~ . lognot) (++ . incf) (-- . decf)))
 
-(defun binop? (s) (member s $binary-ops :test #'member))
+(defun op-member (op l) (member op l :test 'id=))
 
-(defun op-priority (s)
-  (aif (position s $binary-ops :test #'member) (- 40 it)))
+(defun binop? (op) (find op $binary-ops :test 'op-member))
 
-(defun translate-binop (op) (or (cdr (assoc op $binop-translations)) op))
+(defun op-priority (op)
+  (aif (position op $binary-ops :test 'op-member) (- 40 it)))
 
-(defun translate-unary-op (op) (cdr (assoc op $unary-op-translations)))
+(defun translate-binop (op) (or (cdr (assoc op $binop-translations :test 'id=)) op))
+
+(defun translate-unary-op (op) (cdr (assoc op $unary-op-translations :test 'id=)))
 
 (defun syntax-error (&rest args)
   (error "Infix syntax error: ~A" (apply 'format nil args)))
@@ -237,20 +227,22 @@
 ;;;  The recursive-descent parser.  Look Ma, no tables!
 ;;;
 
+(defun id= (s1 s2) (ignore-errors (string= s1 s2)))
+
 (defun parse-primary-expression ()
   (cond ((or (ident? $next) (numberp $next) (stringp $next))
          $next)
-        ((eq $next '\( )
+        ((id= $next '\( )
          (cons 'progn (parse-list)))
-        ((eq $next '\{ )
+        ((id= $next '\{ )
          (cons 'progn (parse-list)))
         (t (syntax-error "Unexpected primary expression: ~A" $next))))
 
 (defun parse-postfix-expression ()
   (iterate loop ((e (parse-primary-expression)))
     (scan-op)
-    (cond ((eq $next '++) (loop `(prog1 ,e (incf ,e))))
-          ((eq $next '--) (loop `(prog1 ,e (decf ,e))))
+    (cond ((id= $next '++) (loop `(prog1 ,e (incf ,e))))
+          ((id= $next '--) (loop `(prog1 ,e (decf ,e))))
           (t e))))
 
 (defun parse-term ()
@@ -268,7 +260,7 @@
       (cond
        ((and (member $next '([ \()) (> new-priority priority))
         (let ( (args (parse-list)))
-          (scan)
+          (scan-op)
           (loop (list op result args))))
        ((and (binop? $next) (> new-priority priority))
         (scan)
@@ -278,17 +270,17 @@
 ;;; This function parses delimiter-separated lists of expressions.
 ;;;
 (defun parse-list (&optional (separator '\,))
-  (let ((terminator (cdr (assoc $next '((\( . \)) ([ . ]) ({ . }))))))
+  (let ((terminator (cdr (assoc $next '((\( . \)) ([ . ]) ({ . })) :test 'id=))))
     (if (not terminator) (syntax-error "Don't know how to balance ~A" $next))
     (scan)
     (iterate loop ()
       (cond ((null $next) (syntax-error "Missing ~S" terminator) )
-            ((eq $next terminator) nil)
+            ((id= $next terminator) nil)
             (t (let ( (arg1 (parse-expression)) )
-                 (unless (or (eq $next separator) (eq $next terminator))
+                 (unless (or (id= $next separator) (id= $next terminator))
                    (syntax-error "Expected '~A' or '~A', got '~A'"
                                  separator terminator $next))
-                 (if (eq $next separator) (scan))
+                 (if (id= $next separator) (scan))
                  (cons arg1 (loop))))))))
 
 ;;;;;;;;;;;;;;;;
@@ -310,9 +302,9 @@
 
 ;;; Readtable integration
 (require :symbol-reader-macros)
-(defreadtable infix (:fuze symbol-reader-macros prefix-calls))
-(in-readtable infix)
+(defreadtable :infix (:fuze symbol-reader-macros prefix-calls))
 (defun read-infix-body (s)
   (dlet (($parcil-stream s)) (scan) (parse-list)))
 (setf $prefix-funcall-syntax-arg-reader 'read-infix-body)
-(defmacro infix (&body body) `(progn ,@body))
+(defun infix (x) x)
+(defun i (x) x)
