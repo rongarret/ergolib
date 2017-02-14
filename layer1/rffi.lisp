@@ -2,7 +2,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; RFFI - Ron's Foreign Function Interface
-;;; 
+;;;
+(require :ergoutils)
 
 (defun ff-lookup (name) (%REFERENCE-EXTERNAL-ENTRY-POINT (external name)))
 
@@ -50,8 +51,84 @@
                      collect arg)
              ,(convert-ff-type return-type))))))))
 
-(shadow 'ff-call)
 
+; These macros provide a convenient way to convert back and forth between Lisp
+; octet vectors and C arrays.  They take care of allocating heap-ivectors, initializing
+; them, and disposing of them when they are no longer needed.
+
+; This might be redundant with ccl:with-pointer-to-ivector
+(defmacro with-heap-ivector ((v-var p-var size-or-value &optional (type 'u8)) &body body)
+  (bb svar (gensym "SIZE-OR-VALUE")
+      sizevar (gensym "SIZE")
+      valvar (gensym "VALUE")
+      `(bb ,svar ,size-or-value
+           ,sizevar (if (numberp ,svar) ,svar (length ,svar))
+           ,valvar (if (numberp ,svar) nil ,svar)
+           :mv (,v-var ,p-var) (make-heap-ivector ,sizevar ',type)
+           (unwind-protect
+               (progn
+                 (if ,valvar (replace ,v-var ,valvar))
+                 ,@body)
+             (dispose-heap-ivector ,v-var)))))
+
+(defmacro with-heap-ivectors (bindings &body body)
+  (if (null bindings)
+    `(progn ,@body)
+    `(with-heap-ivector ,(1st bindings)
+       (with-heap-ivectors ,(rst bindings) ,@body))))
+
+(defmacro with-heap-ivector-result ((v-var p-var size &optional (type 'u8)) &body body)
+  `(bb :mv (,v-var ,p-var) (make-heap-ivector ,size ,type)
+       (unwind-protect
+           (progn ,@body (copy-seq ,v-var))
+         (dispose-heap-ivector ,v-var))))
+
+(defmacro with-heap-ivector-results (bindings &body body)
+  `(bb ,@(with-collector collect
+           (for b in bindings do
+             (bb :db (v-var p-var size &optional (type 'u8)) b
+                 (collect :mv)
+                 (collect (list v-var p-var))
+                 (collect `(make-heap-ivector ,size ',type)))))
+       (progn ,@body)
+       (values ,@(for b in bindings collect
+                   `(prog1 (copy-seq ,(1st b)) (dispose-heap-ivector ,(1st b)))))))
+
+
+
+(define-class c-array ivector macptr)
+
+(define-print-method (c-array ivector) "C~S" ivector)
+
+(define-method (ccl:terminate (ca c-array ivector macptr))
+  (when ivector
+    (dispose-heap-ivector ivector)
+    (setq ivector nil macptr nil)))
+
+(define-method (c-array (n integer) &optional (element-type '(unsigned-byte 8)))
+  (bb :mv (v p) (make-heap-ivector n element-type)
+      (dotimes (i n) (setf (ref v i) 0))
+      (make-c-array :ivector v :macptr p)))
+
+(define-method (c-array (s sequence) &optional (element-type '(unsigned-byte 8)))
+  (bb :mv (v p) (make-heap-ivector (length s) element-type)
+      (replace v s)
+      (make-c-array :ivector v :macptr p)))
+
+(define-method (c-array (s string) &optional (element-type '(unsigned-byte 8)))
+  (bb :mv (v p) (make-heap-ivector (length s) element-type)
+      (replace v (string-to-bytes s))
+      (make-c-array :ivector v :macptr p)))
+
+(define-method (ref1 (ca c-array ivector) k) (ref ivector k))
+
+(define-method (setref (ca c-array ivector) k v) (setref ivector k v))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; FF-CALL replacement.  Not sure this is actualyl a good idea.
+;;;
 ;;; NOTE: The argument format for this FF-CALL is different from the normal
 ;;; MCL FF_CALL.  The format for this FF-CALL is:
 ;;;
@@ -64,6 +141,10 @@
 ;;; doesn't save you very much because ff-lookup caches its results.
 ;;;
 ;;; In general, using FF-CALL is a bad idea.  Use DEFFF instead.
+
+#+NIL(
+
+(shadow 'ff-call)
 
 (defun ff-call (ff &rest args)
   (let ( (return-type :address) )
@@ -89,6 +170,7 @@
         (eval
          `(with-cstrs ,(mapcar #'list stringvars strings)
             (ccl:ff-call ,ff ,@args ,return-type)))))))
+)
 
 (provide 'rffi)
 
