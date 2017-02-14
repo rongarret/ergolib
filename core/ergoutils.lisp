@@ -13,13 +13,46 @@
 
 (defun octets (&rest octets) (coerce octets 'octets))
 
+
+(defun octets->integer (octets &optional (little-endian nil))
+  (if little-endian (setf octets (reverse octets)))
+  (and octets (bb n 0 (for i in octets do (setf n (+ i (ash n 8)))) n)))
+
+(defun integer->octets (n &optional (little-endian nil))
+  (mcond (< n 0) (error "Cannot convert negative numbers to bytes")
+         (= n 0) (octets 0)
+         (bb l nil
+             (while (> n 0)
+               (push (logand n #xFF) l)
+               (setf n (ash n -8)))
+             (if little-endian (setf l (reverse l)))
+             (coerce l 'octets))))
+
+(defun octets->string (v &optional (encoding :utf-8))
+  (decode-string-from-octets (coerce v 'octets) :external-format encoding))
+
+(defun string->octets (s &optional (encoding :utf-8))
+  (encode-string-to-octets s :external-format encoding))
+
+(defv $file-path (list "~" "~/Desktop/"))
+
+(defun find-file (path)
+  (or (probe-file path)
+      (some (fn (p1) (probe-file (merge-pathnames path p1))) $file-path)
+      (probe-file (merge-pathnames path (this-directory)))
+      (probe-file (merge-pathnames path (current-directory)))
+      (error "File ~A not found" path)))
+
+(defmacro with-file ((var path &rest args) &body body)
+  `(with-open-file (,var (find-file ,path) ,. args) ,.body))
+
 (defun file-contents (path &optional (encoding :default))
   (if (eq encoding :binary)
-    (with-open-file (f (pathname path) :element-type 'u8)
+    (with-file (f (pathname path) :element-type 'u8)
       (let ((result (make-array (file-length f) :element-type 'u8)))
         (read-sequence result f)
         result))
-    (with-open-file (f (pathname path) :external-format encoding)
+    (with-file (f (pathname path) :external-format encoding)
       (read-all f))))
 
 (defun set-file-contents (path thing)
@@ -91,6 +124,9 @@
 	   (max max (1- max)) )
 	 ( (or (null j) (zerop max)) (collect (subseq s1 i)) )
       (collect (subseq s1 i j)))))
+
+(defun two-way-split (s c1 c2)
+  (for s in (split s c1) collect (split s c2)))
 
 (defun join (strings &optional (delim ""))
   (with-char-collector collect
