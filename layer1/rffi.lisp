@@ -7,7 +7,7 @@
 
 (defun ff-lookup (name) (%REFERENCE-EXTERNAL-ENTRY-POINT (external name)))
 
-(defun ff-load (path) (open-shared-library (namestring (pathname path))))
+(defun ff-load (path) (open-shared-library (namestring (find-file path))))
 
 (defconstant +bytes-per-int+ (ceiling (log most-positive-fixnum 2) 8))
 

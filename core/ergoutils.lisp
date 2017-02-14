@@ -36,6 +36,9 @@
 
 (defv $file-path (list "~" "~/Desktop/"))
 
+(defun add-path (path)
+  (pushnew (probe-file path) $file-path :test 'equalp))
+
 (defun find-file (path)
   (or (probe-file path)
       (some (fn (p1) (probe-file (merge-pathnames path p1))) $file-path)
