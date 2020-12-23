@@ -263,6 +263,9 @@
 (define-method (intersection (s1 set) (s2 set))
   (make-set :items (for i in s1 if (member? s2 i) collect i)))
 
+(define-method (difference (s1 set) (s2 set))
+  (filter s1 (complement (fn (item) (member? s2 item)))))
+
 (define-method (members (s set)) (keys s))
 
 (define-method (iterator (s set implementation)) (iterator implementation))
