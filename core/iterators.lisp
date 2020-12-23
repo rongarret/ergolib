@@ -52,13 +52,13 @@
   (check-keyword in :in)
   (bb kw (1st body)
       (if (consp kw) (setf kw :do) (pop body))
-      (check-keyword kw '(:do :if :collect :vcollect :yield) 'error)
+      (check-keyword kw '(:do :if :collect :vcollect :scollect :yield) 'error)
       condition t
       (mcond (id= kw :if)
              (setf condition (1st body) kw (2nd body) body (rrst body))
              (and (= (length body) 3) (id= (2nd body) :if))
              (setf condition (3rd body) body (list (1st body))))
-      (check-keyword kw '(:do :collect :vcollect :yield) 'error)
+      (check-keyword kw '(:do :collect :vcollect :scollect :yield) 'error)
       (if (and (cddr body) (not (id= kw :do)))
         (error "Multiple forms following a ~A keyword" kw))
       (push 'progn body)
@@ -71,6 +71,9 @@
                        (iterdo ,var ,thing (if ,condition (,collect ,body))))))
         (:vcollect (with-gensym collect
                      `(with-vcollector ,collect
+                        (iterdo ,var ,thing (if ,condition (,collect ,body))))))
+        (:scollect (with-gensym collect
+                     `(with-scollector ,collect
                         (iterdo ,var ,thing (if ,condition (,collect ,body)))))))))
 
 (defmacro collect (expr for var in iter &optional if condition)
@@ -87,6 +90,12 @@
     `(for ,var in ,iter vcollect ,expr ,if ,condition)
     `(for ,var in ,iter vcollect ,expr)))
 
+(defmacro scollect (expr for var in iter &optional if condition)
+  (check-keyword for :for 'error)
+  (check-keyword in :in 'error)
+  (if if
+    `(for ,var in ,iter scollect ,expr ,if ,condition)
+    `(for ,var in ,iter scollect ,expr)))
 
 (define-method (iterator (l list)) (fn () (if l (pop l) (iterend))))
 

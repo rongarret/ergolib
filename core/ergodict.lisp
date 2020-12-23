@@ -267,6 +267,12 @@
 
 (define-method (iterator (s set implementation)) (iterator implementation))
 
+(defmacro with-scollector (var &body body)
+  (with-gensyms (result item)
+    `(let ( (,result (make-set)) )
+       (flet ( (,var (,item) (add ,result ,item) ,item) )
+         ,@body)
+       ,result)))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;;
