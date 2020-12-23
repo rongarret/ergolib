@@ -241,6 +241,11 @@
 ;;;
 (define-class (set dictionary))
 
+(defun make-set (&key (implementation (make-hash-table)) (items nil))
+  (bb s (make-instance 'set :implementation implementation)
+      (for item in items do (add s item))
+      s))
+
 (define-method (member? (s set) item) (refd s item nil))
 
 (define-method (add (s set) item) (setf (ref s item) item) s)
