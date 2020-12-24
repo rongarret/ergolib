@@ -277,6 +277,10 @@
          ,@body)
        ,result)))
 
+(defun sforce (iterator)
+  (with-scollector collect
+    (for item in iterator do (collect item))))
+
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Binner

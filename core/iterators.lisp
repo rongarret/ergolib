@@ -200,10 +200,6 @@
   (with-vcollector collect
     (for item in iterator do (collect item))))
 
-(defun sforce (iterator)
-  (with-scollector collect
-    (for item in iterator do (collect item))))
-
 (defun strforce (iterator)
   (with-char-collector collect
     (for item in iterator do (collect item))))
