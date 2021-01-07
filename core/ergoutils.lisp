@@ -208,12 +208,6 @@
       (if (funcall function item)
         (collect item)))))
 
-(define-method (filter (s set) function)
-  (with-scollector collect
-    (for item in s do
-      (if (funcall function item)
-        (collect item)))))
-
 (define-method (filter (s string) function)
   (with-char-collector collect
     (for c in s do
