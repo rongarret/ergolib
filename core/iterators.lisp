@@ -80,9 +80,9 @@
         (slice s 2)
         (check-keyword kw (cat expected arrows) function))))
 
-;;; FOR with an arrow
-(defmacro forw (var in thing &body body)
-  (check-keyword in :in)
+;;; FOR with an arrow with alternative parameter order
+(defmacro over (thing as var &body body)
+  (check-keyword as :as)
   (bb kw (1st body)
       (if (consp kw) (setf kw :do) (pop body))
       (check-keyword-with-arrow kw '(:do :if :yield) 'error)
