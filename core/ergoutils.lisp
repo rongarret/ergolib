@@ -1,6 +1,7 @@
 (require :binding-block)
 (require :ergoclos)
 (require :iterators)
+(require :globals)
 
 (defun read-all (stream)
   (if (eq (stream-element-type stream) 'character)
@@ -13,6 +14,9 @@
 
 (defun octets (&rest octets) (coerce octets 'octets))
 
+(defmacro bytes (&rest octets)
+  (warn "BYTES is deprecated.  Use OCTETS instead.")
+  `(octets ,@octets))
 
 (defun octets->integer (octets &optional (little-endian nil))
   (if little-endian (setf octets (reverse octets)))
@@ -37,7 +41,10 @@
 (defv $file-path (list "~" "~/Desktop/"))
 
 (defun add-path (path)
-  (pushnew (probe-file path) $file-path :test 'equalp))
+  (bb p (probe-file path)
+      (if (not p) (error "No such path: ~A" path))
+      (pushnew p *module-search-path* :test 'equalp)
+      (pushnew p $file-path :test 'equalp)))
 
 (defun find-file (path)
   (or (probe-file path)
@@ -77,10 +84,10 @@
   (if (typep cmd 'string) (setf cmd (split cmd #\Space)))
   (bb p (run-program (fst cmd) (rst cmd) :output :stream :input stdin :wait nil
                      :external-format external-format)
-      s (read-all (external-process-output-stream p))
       (when (ccl::external-process-pid p)
         (with-interrupts-enabled
             (wait-on-semaphore (ccl::external-process-completed p))))
+      s (read-all (external-process-output-stream p))
       (values s (nth-value 1 (external-process-status p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -175,6 +182,12 @@
   (with-decoded-universal-time ut
     (format nil "~d ~a ~d" d (elt short-month-names (1- mo)) y)))
 
+(defun decode-unix-timestamp (uts)
+  (decode-universal-time (+ uts #.(encode-universal-time 0 0 0 1 1 1970))))
+
+(defun format-unix-timestamp (uts)
+  (format-date-time (+ uts #.(encode-universal-time 0 0 0 1 1 1970))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Spawn
@@ -190,6 +203,7 @@
            (,prf (list :name (princ-to-string ,namevar)) #+LISPWORKS nil (fn () ,@body))
          #+EASYGUI (sleep 0.1) ; Workaround for race condition in gui:background-process-run-function
          ))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Filter
@@ -266,6 +280,41 @@
           (setf (gethash e h) t)))
       nil))
 
+;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Misc.
+;;;
+(define-method (trim (s string) &optional (test 'whitespacep))
+  (aif (position-if-not test s)
+    (slice s it (1+ (position-if-not test s :from-end t)))
+    (slice s 0 0)))
+
+(defun random-permutation (seq)
+  (bb v (coerce seq 'vector)
+      len (length v)
+      (dotimes (i len)
+        (rotatef (svref v i) (svref v (+ i (random (- len i))))))
+      v))
+
+; Just for fun
+
+(defun avg (v &rest l)
+  (if l (avg (cons v l)) (/ (reduce '+ v) (length v))))
+
+(defun quicksort (v &optional (start 0) (end (1- (length v))))
+  (if (>= start end)
+    v
+    (bb idx start
+        (rotatef (elt v end) (elt v (round (avg start end))))
+        pivot (elt v end)
+        (for i in (counter start end) do
+          (when (< (elt v i) pivot)
+            (rotatef (elt v i) (ref v idx))
+            (incf idx)))
+        (rotatef (elt v end) (elt v idx))
+        (quicksort v start (1- idx))
+        (quicksort v (1+ idx) end))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Debugging utilities
@@ -273,30 +322,55 @@
 (defmacro name (thing &optional name)
   (bb val (eval thing)
       class (class-name (class-of val))
-      `(defmethod print-object ((x (eql ',val)) stream)
-         (format stream "#<~A ~A>" ',class ',(or name thing)))))
+      `(progn
+         (defmethod print-object ((x (eql ',val)) stream)
+           (format stream "#<~A ~A>" ',class ',(or name thing)))
+         ',val)))
 
 (defun unname (thing)
   (let ((m (find-method #'print-object () `((eql ,thing) t))))
     (if m (remove-method #'print-object m))))
 
-(defun logstream ()
-  #+HEMLOCK (HEMLOCK-EXT:TOP-LISTENER-OUTPUT-STREAM)
-  #-HEMLOCK *terminal-io*)
+(defun terminal-stream ()
+  (or #+HEMLOCK (HEMLOCK-EXT:TOP-LISTENER-OUTPUT-STREAM) *terminal-io*))
+
+(defv $logstream nil)
+
+(defun logstream () (or $logstream (terminal-stream)))
+
+(defv $logstream-lock (make-lock))
+
+(defmacro with-logstream-lock (&body body)
+  `(with-lock-grabbed ($logstream-lock) ,@body))
+
+(defindent "with-logstream-lock" 0)
+
+(defun log-to (path)
+  (with-logstream-lock
+    (finish-output $logstream)
+    (if (typep $logstream 'file-stream) (close $logstream))
+    (setf $logstream (if path
+                       (open (strcat path (now)) :direction :output :if-exists :append
+                             :if-does-not-exist :create :sharing :lock)
+                       (terminal-stream)))
+    (logmsg "Log started at ~A" (format-date-time (now)))))
 
 (defun logmsg (s &rest args)
-  (let ((logstream (logstream)))
-    (format logstream "~&[~A] " (format-date-time (now)))
-    (if (stringp s)
-      (apply 'format logstream s args)
-      (if args
-        (princ (cons s args) logstream)
-        (princ s logstream)))
-    (terpri logstream)
-    (force-output logstream))
+  (with-logstream-lock
+    (let ((logstream (logstream)))
+      (format logstream "~&[~A] " (format-date-time (now)))
+      (if (stringp s)
+        (apply 'format logstream s args)
+        (if args
+          (princ (cons s args) logstream)
+          (princ s logstream)))
+      (terpri logstream)
+      (force-output logstream)))
   (values))
 
-#+CCL ; Need to replace with trivial-backtrace
 (defun get-backtrace ()
   (with-output-to-string (s)
     (ccl:print-call-history :detailed-p nil :stream s)))
+
+(defun edmod (module) ; EDit MODule
+  (ed (ccl::find-module-pathnames module)))
