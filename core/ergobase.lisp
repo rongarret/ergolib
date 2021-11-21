@@ -152,6 +152,67 @@
 	 ,@body
          ,svar))))
 
+;;; User-extendable collector
+
+(let ( (collector-table (make-hash-table :test #'eq)) )
+(flet ( (trim-symbol (symbol)
+          (read-from-string (string-trim "'" (->string symbol)))) )
+  
+  (defmacro define-type-collector (type &body body)
+    (with-gensym dummy
+      (let ( (macname (trim-symbol dummy)) )
+        (setf (gethash (trim-symbol type) collector-table) macname)
+        `(defmacro ,macname (var &body body)
+           ,@body))))
+  
+  (defmacro create-type-collector (type initializer adder
+                                   &optional (finisher (fn (x) x)))
+    (with-gensym dummy
+      (let ( (macname (trim-symbol dummy)) )
+        (setf (gethash (trim-symbol type) collector-table) macname)
+        `(defmacro ,macname (var &body body)
+           (with-gensyms (result item)
+             (let ( (initializer ,initializer)
+                    (adder ,adder)
+                    (finisher ,finisher) )
+               `(let ( (,result (funcall ,initializer)) )
+                  (flet ( (,var (,item) (funcall ,adder ,result ,item) ,item) )
+                    ,@body)
+                  (funcall ,finisher ,result))))))))
+  
+  (defun define-type-collector-synonym (new existing)
+    (setf (gethash (trim-symbol new) collector-table)
+          (gethash (trim-symbol existing) collector-table)))
+  
+  (defun ref-type-collector (type)
+    (let ( (macname (gethash (trim-symbol type) collector-table)) )
+      (or macname
+          (error "Collector for ~A is not defined" type))))))
+
+(defun type-of1 (thing)
+  (let ( (type (type-of thing)) )
+    (if (atom type) type (car type))))
+
+(defmacro with-type-collector (type var &body body)
+  (let ( (macname (ref-type-collector type)) )
+    `(,macname ,var ,@body)))
+
+(defmacro with-auto-collector (thing var &body body)
+  `(let ( (type (type-of1 ,thing))
+          (var ',var)
+          (body ',body) )
+     (eval `(with-type-collector ,type ,var ,@body))))
+
+(define-type-collector 'list `(with-collector ,var ,@body))
+(define-type-collector-synonym 'cons 'list)
+
+(defun init-vector () [])
+(create-type-collector 'vector #'init-vector #'vpe)
+(define-type-collector-synonym 'simple-vector 'vector)
+
+(define-type-collector 'string `(with-char-collector ,var ,@body))
+(define-type-collector-synonym 'simple-base-string 'string)
+
 ;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Anaphoric conditionals

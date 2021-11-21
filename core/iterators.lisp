@@ -73,6 +73,45 @@
                      `(with-vcollector ,collect
                         (iterdo ,var ,thing (if ,condition (,collect ,body)))))))))
 
+(defun check-keyword-with-arrow (kw expected &optional (function 'warn))
+  (bb s (->string kw)
+      arrows '(-> -><type>)
+      (if (starts-with s "->")
+        (slice s 2)
+        (check-keyword kw (cat expected arrows) function))))
+
+;;; FOR with an arrow with alternative parameter order
+(defmacro over (thing as var &body body)
+  (check-keyword as :as)
+  (bb kw (1st body)
+      (if (consp kw) (setf kw :do) (pop body))
+      (check-keyword-with-arrow kw '(:do :if :yield) 'error)
+      condition t
+      (mcond (id= kw :if)
+             (setf condition (1st body) kw (2nd body) body (rrst body))
+             (and (= (length body) 3) (id= (2nd body) :if))
+             (setf condition (3rd body) body (list (1st body))))
+      typestr (check-keyword-with-arrow kw '(:do :yield) 'error)
+      (if (and (cddr body) (not (id= kw :do)))
+        (error "Multiple forms following a ~A keyword" kw))
+      (push 'progn body)
+      (if typestr
+        (with-gensym collect
+          (if (string= "" typestr)
+            (return `(let ( (type (type-of1 ,thing)) (collect ',collect)
+                            (var ',var) (thing ',thing)
+                            (condition ',condition) (body ',body) )
+                       (eval `(with-type-collector ,type ,collect
+                                (iterdo ,var ,thing
+                                  (if ,condition (,collect ,body)))))))
+            (let ( (type (read-from-string typestr)) )
+              (return `(with-type-collector ,type ,collect
+                         (iterdo ,var ,thing
+                           (if ,condition (,collect ,body)))))))))
+      (if (id= kw :yield)
+        (return `(yield ,body for ,var in ,thing if ,condition)))
+      `(iterdo ,var ,thing (if ,condition ,body))))
+
 (defmacro collect (expr for var in iter &optional if condition)
   (check-keyword for :for 'error)
   (check-keyword in :in 'error)
@@ -86,7 +125,6 @@
   (if if
     `(for ,var in ,iter vcollect ,expr ,if ,condition)
     `(for ,var in ,iter vcollect ,expr)))
-
 
 (define-method (iterator (l list)) (fn () (if l (pop l) (iterend))))
 
